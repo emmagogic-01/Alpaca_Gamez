@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Feed the Alpaca</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      overflow: hidden;
+      font-family: Arial, Helvetica, sans-serif;
+      background: #0f1020;
+    }
+
+    #game {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at top, rgba(255, 216, 235, 0.18), transparent 35%),
+        linear-gradient(180deg, #15162e 0%, #111325 45%, #0c0d18 100%);
+      color: white;
+      user-select: none;
+    }
+
+    #stars {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.65;
+    }
+
+    .star {
+      position: absolute;
+      width: 3px;
+      height: 3px;
+      background: white;
+      border-radius: 50%;
+      box-shadow: 0 0 8px rgba(255,255,255,0.65);
+      animation: twinkle 2.4s infinite ease-in-out;
+    }
+
+    @keyframes twinkle {
+      0%, 100% { opacity: 0.25; transform: scale(0.8); }
+      50% { opacity: 1; transform: scale(1.4); }
+    }
+
+    #hud {
+      position: absolute;
+      top: 18px;
+      left: 18px;
+      right: 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      z-index: 20;
+      gap: 16px;
+    }
+
+    .panel {
+      background: rgba(255,255,255,0.08);
+      border: 2px solid rgba(255,255,255,0.16);
+      border-radius: 20px;
+      padding: 12px 16px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.22);
+      backdrop-filter: blur(6px);
+    }
+
+    #title-panel {
+      max-width: 520px;
+    }
+
+    #title-panel h1 {
+      margin: 0 0 8px;
+      font-size: 34px;
+      color: #ffd7ea;
+    }
+
+    #title-panel p {
+      margin: 0;
+      font-size: 15px;
+      line-height: 1.4;
+      color: #f7f7ff;
+    }
+
+    #stats {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .stat-box {
+      min-width: 140px;
+      text-align: center;
+    }
+
+    .stat-label {
+      font-size: 13px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #ffd6ec;
+      margin-bottom: 6px;
+    }
+
+    .stat-value {
+      font-size: 30px;
+      font-weight: 800;
+      color: white;
+    }
+
+    #lives {
+      display: flex;
+      gap: 6px;
+      justify-content: center;
+      align-items: center;
+      min-height: 36px;
+    }
+
+    .life-heart {
+      font-size: 28px;
+      filter: drop-shadow(0 0 6px rgba(255, 120, 180, 0.35));
+      transition: transform 0.2s ease, opacity 0.2s ease;
+    }
+
+    .life-heart.lost {
+      opacity: 0.2;
+      transform: scale(0.9);
+      filter: grayscale(1);
+    }
+
+    #falling-layer {
+      position: absolute;
+      inset: 0;
+      z-index: 5;
+      pointer-events: none;
+    }
+
+    .item {
+      position: absolute;
+      font-size: 40px;
+      line-height: 1;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      filter: drop-shadow(0 6px 10px rgba(0,0,0,0.2));
+    }
+
+    .item.good {
+      text-shadow: 0 0 10px rgba(255, 190, 220, 0.25);
+    }
+
+    .item.bad {
+      text-shadow: 0 0 10px rgba(255, 120, 120, 0.2);
+    }
+
+    #alpaca {
+      position: absolute;
+      left: 50%;
+      bottom: 34px;
+      width: 250px;
+      height: 280px;
+      transform: translateX(-50%);
+      z-index: 10;
+      transition: left 0.07s linear;
+      pointer-events: none;
+    }
+
+    #message {
+      position: absolute;
+      left: 50%;
+      bottom: 335px;
+      transform: translateX(-50%);
+      max-width: 620px;
+      width: calc(100vw - 40px);
+      text-align: center;
+      z-index: 30;
+      display: none;
+    }
+
+    #message.show {
+      display: block;
+    }
+
+    .bubble {
+      background: white;
+      color: #313042;
+      border: 4px solid #ffd2e7;
+      border-radius: 26px;
+      padding: 16px 18px;
+      font-size: 20px;
+      line-height: 1.35;
+      box-shadow: 0 14px 32px rgba(0,0,0,0.22);
+    }
+
+    .bubble::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      bottom: 6px;
+      width: 22px;
+      height: 22px;
+      transform: translateX(-50%) rotate(45deg);
+      background: white;
+      border-right: 4px solid #ffd2e7;
+      border-bottom: 4px solid #ffd2e7;
+      z-index: -1;
+    }
+
+    #overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(9, 10, 22, 0.55);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 40;
+    }
+
+    .card {
+      width: min(720px, calc(100vw - 32px));
+      background: rgba(255,255,255,0.1);
+      border: 2px solid rgba(255,255,255,0.16);
+      border-radius: 28px;
+      padding: 26px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.35);
+      backdrop-filter: blur(10px);
+      text-align: center;
+      color: white;
+    }
+
+    .card h2 {
+      margin: 0 0 12px;
+      font-size: 40px;
+      color: #ffd9eb;
+    }
+
+    .card p {
+      margin: 10px 0;
+      font-size: 18px;
+      line-height: 1.5;
+    }
+
+    .mini-guide {
+      margin-top: 18px;
+      padding: 14px;
+      border-radius: 18px;
+      background: rgba(255,255,255,0.08);
+      font-size: 17px;
+      line-height: 1.5;
+    }
+
+    .button {
+      display: inline-block;
+      margin-top: 20px;
+      border: none;
+      border-radius: 999px;
+      padding: 14px 24px;
+      font-size: 18px;
+      font-weight: 800;
+      cursor: pointer;
+      background: linear-gradient(180deg, #ffd7eb 0%, #ff9cc7 100%);
+      color: #6d1b4a;
+      box-shadow: 0 10px 24px rgba(255, 120, 180, 0.3);
+    }
+
+    .button:hover {
+      transform: translateY(-1px) scale(1.02);
+    }
+
+    #ground {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 110px;
+      background: linear-gradient(180deg, #2b724c 0%, #1e5a39 100%);
+      z-index: 1;
+      box-shadow: inset 0 10px 18px rgba(255,255,255,0.08);
+    }
+
+    #ground::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: -18px;
+      height: 28px;
+      background:
+        radial-gradient(circle at 18px 18px, #46b36f 16px, transparent 17px) repeat-x;
+      background-size: 38px 28px;
+    }
+
+    .pop {
+      position: absolute;
+      font-size: 28px;
+      font-weight: 800;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      z-index: 25;
+      animation: popFloat 0.9s ease-out forwards;
+    }
+
+    .pop.good { color: #ffd7f0; }
+    .pop.bad { color: #ff9f9f; }
+
+    @keyframes popFloat {
+      0% { opacity: 0; transform: translate(-50%, 0) scale(0.7); }
+      15% { opacity: 1; }
+      100% { opacity: 0; transform: translate(-50%, -46px) scale(1.15); }
+    }
+
+    @media (max-width: 900px) {
+      #hud {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      #stats {
+        justify-content: flex-start;
+      }
+
+      #title-panel h1 {
+        font-size: 28px;
+      }
+
+      .bubble {
+        font-size: 17px;
+      }
+
+      #alpaca {
+        width: 220px;
+        height: 250px;
+      }
+
+      #message {
+        bottom: 305px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="game">
+    <div id="stars"></div>
+
+    <div id="hud">
+      <div id="title-panel" class="panel">
+        <h1>🦙 Feed the Alpaca</h1>
+        <p>
+          Use the <strong>left</strong> and <strong>right</strong> arrow keys to move.
+          Catch yummy treats and avoid nasty snacks.
+        </p>
+      </div>
+
+      <div id="stats">
+        <div class="panel stat-box">
+          <div class="stat-label">Score</div>
+          <div id="score" class="stat-value">0</div>
+        </div>
+        <div class="panel stat-box">
+          <div class="stat-label">Life</div>
+          <div id="lives"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="message">
+      <div class="bubble" id="message-text"></div>
+    </div>
+
+    <div id="falling-layer"></div>
+
+    <div id="alpaca" aria-label="cute beige alpaca">
+      <svg viewBox="0 0 250 280" width="250" height="280">
+        <!-- legs -->
+        <rect x="62" y="198" width="20" height="56" rx="9" fill="#ead8c2"></rect>
+        <rect x="95" y="202" width="20" height="52" rx="9" fill="#ead8c2"></rect>
+        <rect x="135" y="202" width="20" height="52" rx="9" fill="#ead8c2"></rect>
+        <rect x="168" y="198" width="20" height="56" rx="9" fill="#ead8c2"></rect>
+
+        <!-- body fluff -->
+        <ellipse cx="125" cy="154" rx="76" ry="64" fill="#f6eadb"></ellipse>
+        <circle cx="73" cy="132" r="24" fill="#f6eadb"></circle>
+        <circle cx="94" cy="110" r="26" fill="#f6eadb"></circle>
+        <circle cx="125" cy="100" r="30" fill="#f6eadb"></circle>
+        <circle cx="156" cy="110" r="26" fill="#f6eadb"></circle>
+        <circle cx="176" cy="132" r="23" fill="#f6eadb"></circle>
+        <circle cx="68" cy="166" r="20" fill="#f6eadb"></circle>
+        <circle cx="182" cy="167" r="19" fill="#f6eadb"></circle>
+
+        <!-- neck -->
+        <rect x="102" y="78" width="46" height="74" rx="22" fill="#ead8c2"></rect>
+
+        <!-- head -->
+        <ellipse cx="125" cy="66" rx="54" ry="46" fill="#ead8c2"></ellipse>
+
+        <!-- ears -->
+        <path d="M86 28 Q74 -8 98 20" fill="#dfc29f"></path>
+        <path d="M164 28 Q176 -8 152 20" fill="#dfc29f"></path>
+        <path d="M88 27 Q80 2 98 21" fill="#f3d4dd"></path>
+        <path d="M162 27 Q170 2 152 21" fill="#f3d4dd"></path>
+
+        <!-- eyes -->
+        <ellipse cx="104" cy="64" rx="10" ry="14" fill="#76d454"></ellipse>
+        <ellipse cx="146" cy="64" rx="10" ry="14" fill="#76d454"></ellipse>
+        <circle cx="104" cy="64" r="5" fill="#1f2a1f"></circle>
+        <circle cx="146" cy="64" r="5" fill="#1f2a1f"></circle>
+        <circle cx="102" cy="61" r="1.8" fill="#fff"></circle>
+        <circle cx="144" cy="61" r="1.8" fill="#fff"></circle>
+
+        <!-- eyelashes -->
+        <g stroke="#3c2a23" stroke-width="2.5" stroke-linecap="round">
+          <line x1="98" y1="48" x2="91" y2="40"></line>
+          <line x1="104" y1="47" x2="104" y2="38"></line>
+          <line x1="110" y1="48" x2="117" y2="40"></line>
+
+          <line x1="140" y1="48" x2="133" y2="40"></line>
+          <line x1="146" y1="47" x2="146" y2="38"></line>
+          <line x1="152" y1="48" x2="159" y2="40"></line>
+        </g>
+
+        <!-- cheeks -->
+        <ellipse cx="88" cy="88" rx="13" ry="8" fill="#f5b7bf" opacity="0.78"></ellipse>
+        <ellipse cx="162" cy="88" rx="13" ry="8" fill="#f5b7bf" opacity="0.78"></ellipse>
+
+        <!-- muzzle -->
+        <ellipse cx="125" cy="94" rx="22" ry="15" fill="#f5e6d7"></ellipse>
+        <circle cx="118" cy="89" r="2.2" fill="#5b4339"></circle>
+        <circle cx="132" cy="89" r="2.2" fill="#5b4339"></circle>
+        <path id="mouth" d="M116 98 Q125 108 134 98" stroke="#5b4339" stroke-width="3" fill="none" stroke-linecap="round"></path>
+      </svg>
+    </div>
+
+    <div id="ground"></div>
+
+    <div id="overlay">
+      <div class="card">
+        <h2>💗 Feed the Alpaca 💗</h2>
+        <p>
+          Help the alpaca catch its favorite snacks and avoid the bad ones.
+        </p>
+        <div class="mini-guide">
+          <div><strong>Move:</strong> ⬅️ and ➡️</div>
+          <div><strong>Good food:</strong> 🌸 💖 🥕 🌿 🪱</div>
+          <div><strong>Bad food:</strong> 🪨 💻 💣</div>
+          <div><strong>Goal:</strong> get the highest score before all 5 hearts are gone.</div>
+        </div>
+        <button id="start-btn" class="button">Start Game</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const game = document.getElementById('game');
+    const fallingLayer = document.getElementById('falling-layer');
+    const alpaca = document.getElementById('alpaca');
+    const scoreEl = document.getElementById('score');
+    const livesEl = document.getElementById('lives');
+    const message = document.getElementById('message');
+    const messageText = document.getElementById('message-text');
+    const overlay = document.getElementById('overlay');
+    const startBtn = document.getElementById('start-btn');
+    const stars = document.getElementById('stars');
+    const mouth = document.getElementById('mouth');
+
+    const GOOD_ITEMS = ['🌸', '💖', '🥕', '🌿', '🪱'];
+    const BAD_ITEMS = ['🪨', '💻', '💣'];
+
+    let score = 0;
+    let lives = 5;
+    let running = false;
+    let playerX = window.innerWidth / 2;
+    let moveLeft = false;
+    let moveRight = false;
+    let items = [];
+    let spawnTimer = 0;
+    let lastTime = 0;
+    let speedBase = 180;
+    let messageTimer = null;
+
+    function createStars() {
+      stars.innerHTML = '';
+      const count = Math.max(40, Math.floor(window.innerWidth / 28));
+      for (let i = 0; i < count; i++) {
+        const s = document.createElement('div');
+        s.className = 'star';
+        s.style.left = Math.random() * 100 + 'vw';
+        s.style.top = Math.random() * 75 + 'vh';
+        s.style.animationDelay = (Math.random() * 2.5) + 's';
+        stars.appendChild(s);
+      }
+    }
+
+    function updateLivesDisplay() {
+      livesEl.innerHTML = '';
+      for (let i = 0; i < 5; i++) {
+        const heart = document.createElement('div');
+        heart.className = 'life-heart' + (i < lives ? '' : ' lost');
+        heart.textContent = '💗';
+        livesEl.appendChild(heart);
+      }
+    }
+
+    function showBubble(text) {
+      clearTimeout(messageTimer);
+      messageText.textContent = text;
+      message.classList.add('show');
+      messageTimer = setTimeout(() => {
+        message.classList.remove('show');
+      }, 1400);
+    }
+
+    function setHappyFace() {
+      mouth.setAttribute('d', 'M116 98 Q125 108 134 98');
+    }
+
+    function setSadFace() {
+      mouth.setAttribute('d', 'M116 104 Q125 95 134 104');
+      setTimeout(setHappyFace, 500);
+    }
+
+    function popText(x, y, text, kind) {
+      const pop = document.createElement('div');
+      pop.className = 'pop ' + kind;
+      pop.textContent = text;
+      pop.style.left = x + 'px';
+      pop.style.top = y + 'px';
+      game.appendChild(pop);
+      setTimeout(() => pop.remove(), 900);
+    }
+
+    function resetGame() {
+      score = 0;
+      lives = 5;
+      speedBase = 180;
+      playerX = window.innerWidth / 2;
+      items.forEach(item => item.el.remove());
+      items = [];
+      scoreEl.textContent = score;
+      updateLivesDisplay();
+      setHappyFace();
+      alpaca.style.left = playerX + 'px';
+      message.classList.remove('show');
+    }
+
+    function startGame() {
+      resetGame();
+      overlay.style.display = 'none';
+      running = true;
+      lastTime = performance.now();
+      requestAnimationFrame(loop);
+      showBubble('Catch the yummy treats, little alpaca!');
+    }
+
+    function endGame() {
+      running = false;
+      overlay.style.display = 'flex';
+      overlay.querySelector('.card').innerHTML = `
+        <h2>Game Over 💔</h2>
+        <p>Your alpaca did its fluffy best.</p>
+        <p><strong>Final Score:</strong> ${score}</p>
+        <div class="mini-guide">
+          Try again and see how many tasty snacks you can collect before the hearts run out.
+        </div>
+        <button id="restart-btn" class="button">Play Again</button>
+      `;
+      document.getElementById('restart-btn').addEventListener('click', startGame);
+    }
+
+    function spawnItem() {
+      const isGood = Math.random() < 0.72;
+      const symbol = isGood
+        ? GOOD_ITEMS[Math.floor(Math.random() * GOOD_ITEMS.length)]
+        : BAD_ITEMS[Math.floor(Math.random() * BAD_ITEMS.length)];
+
+      const el = document.createElement('div');
+      el.className = 'item ' + (isGood ? 'good' : 'bad');
+      el.textContent = symbol;
+      fallingLayer.appendChild(el);
+
+      const x = 30 + Math.random() * (window.innerWidth - 60);
+      const size = isGood ? 38 + Math.random() * 10 : 36 + Math.random() * 8;
+      const speed = speedBase + Math.random() * 70 + score * 2.8;
+
+      el.style.left = x + 'px';
+      el.style.top = '-40px';
+      el.style.fontSize = size + 'px';
+
+      items.push({
+        el,
+        x,
+        y: -40,
+        size,
+        speed,
+        good: isGood,
+        symbol
+      });
+    }
+
+    function updatePlayer(dt) {
+      const moveSpeed = 420;
+      if (moveLeft) playerX -= moveSpeed * dt;
+      if (moveRight) playerX += moveSpeed * dt;
+
+      const minX = 78;
+      const maxX = window.innerWidth - 78;
+      if (playerX < minX) playerX = minX;
+      if (playerX > maxX) playerX = maxX;
+
+      alpaca.style.left = playerX + 'px';
+    }
+
+    function alpacaCatchBox() {
+      const rect = alpaca.getBoundingClientRect();
+      return {
+        left: rect.left + 48,
+        right: rect.right - 48,
+        top: rect.top + 50,
+        bottom: rect.bottom - 70,
+        centerX: rect.left + rect.width / 2,
+        centerY: rect.top + rect.height / 2
+      };
+    }
+
+    function updateItems(dt) {
+      const catchBox = alpacaCatchBox();
+
+      for (let i = items.length - 1; i >= 0; i--) {
+        const item = items[i];
+        item.y += item.speed * dt;
+        item.el.style.top = item.y + 'px';
+        item.el.style.left = item.x + 'px';
+
+        const hitX = item.x > catchBox.left && item.x < catchBox.right;
+        const hitY = item.y + item.size * 0.2 > catchBox.top && item.y < catchBox.bottom;
+
+        if (hitX && hitY) {
+          if (item.good) {
+            score += 1;
+            scoreEl.textContent = score;
+            showBubble('Mmmm appetitive! More snacks please!');
+            popText(item.x, item.y, '+1', 'good');
+            setHappyFace();
+          } else {
+            lives -= 1;
+            if (lives < 0) lives = 0;
+            updateLivesDisplay();
+            showBubble('Bleh! That was not a snack!');
+            popText(item.x, item.y, '-1 heart', 'bad');
+            setSadFace();
+          }
+
+          item.el.remove();
+          items.splice(i, 1);
+          continue;
+        }
+
+        if (item.y > window.innerHeight + 50) {
+          item.el.remove();
+          items.splice(i, 1);
+        }
+      }
+    }
+
+    function loop(now) {
+      if (!running) return;
+      const dt = Math.min((now - lastTime) / 1000, 0.033);
+      lastTime = now;
+
+      updatePlayer(dt);
+      updateItems(dt);
+
+      spawnTimer -= dt;
+      if (spawnTimer <= 0) {
+        spawnItem();
+        const minInterval = Math.max(0.32, 0.75 - score * 0.008);
+        const maxInterval = Math.max(0.55, 1.05 - score * 0.01);
+        spawnTimer = minInterval + Math.random() * (maxInterval - minInterval);
+      }
+
+      if (lives <= 0) {
+        endGame();
+        return;
+      }
+
+      requestAnimationFrame(loop);
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowLeft') {
+        moveLeft = true;
+        e.preventDefault();
+      }
+      if (e.key === 'ArrowRight') {
+        moveRight = true;
+        e.preventDefault();
+      }
+      if (!running && e.key.toLowerCase() === 'r' && overlay.style.display !== 'none') {
+        startGame();
+      }
+    });
+
+    document.addEventListener('keyup', (e) => {
+      if (e.key === 'ArrowLeft') moveLeft = false;
+      if (e.key === 'ArrowRight') moveRight = false;
+    });
+
+    window.addEventListener('resize', () => {
+      createStars();
+      if (playerX > window.innerWidth - 78) playerX = window.innerWidth - 78;
+      alpaca.style.left = playerX + 'px';
+    });
+
+    startBtn.addEventListener('click', startGame);
+
+    createStars();
+    updateLivesDisplay();
+    alpaca.style.left = playerX + 'px';
+  </script>
+</body>
+</html>

@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cute Alpaca Gift Game</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: #000;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    #game {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      background: #000;
+      overflow: hidden;
+    }
+
+    .stingray {
+      position: absolute;
+      top: 20px;
+      width: 72px;
+      height: 54px;
+      pointer-events: none;
+      animation: glide linear infinite;
+      z-index: 1;
+      filter: drop-shadow(0 0 7px rgba(255, 90, 170, 0.35));
+    }
+
+    .stingray svg {
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+      display: block;
+    }
+
+    @keyframes glide {
+      from { transform: translateX(-80px); }
+      to   { transform: translateX(calc(100vw + 120px)); }
+    }
+
+    #gift-zone {
+      position: absolute;
+      left: 50%;
+      bottom: 58px;
+      transform: translateX(-50%);
+      width: 340px;
+      height: 360px;
+      z-index: 5;
+    }
+
+    #present {
+      position: absolute;
+      left: 50%;
+      bottom: 0;
+      transform: translateX(-50%);
+      width: 250px;
+      height: 230px;
+      cursor: pointer;
+    }
+
+    #box {
+      position: absolute;
+      bottom: 0;
+      width: 250px;
+      height: 150px;
+      background: linear-gradient(180deg, #ffc6df 0%, #ff9fca 100%);
+      border: 4px solid #fff1f7;
+      border-radius: 18px;
+      box-shadow: 0 0 24px rgba(255, 155, 205, 0.28);
+      overflow: hidden;
+      cursor: pointer;
+    }
+
+    #box::before {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 0;
+      width: 26px;
+      height: 100%;
+      transform: translateX(-50%);
+      background: #8af5b3;
+      box-shadow: 0 0 10px rgba(138, 245, 179, 0.35);
+      pointer-events: none;
+    }
+
+    #box::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 50%;
+      width: 100%;
+      height: 22px;
+      transform: translateY(-50%);
+      background: #8af5b3;
+      box-shadow: 0 0 10px rgba(138, 245, 179, 0.35);
+      pointer-events: none;
+    }
+
+    #lid {
+      position: absolute;
+      bottom: 136px;
+      left: 50%;
+      width: 278px;
+      height: 52px;
+      transform: translateX(-50%) rotate(0deg);
+      transform-origin: left bottom;
+      transition: transform 0.7s ease;
+      z-index: 4;
+      cursor: pointer;
+    }
+
+    #lid.open {
+      transform: translateX(-50%) rotate(-28deg) translateY(-18px);
+    }
+
+    #lid-main {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(180deg, #ffd4e8 0%, #ffb4d4 100%);
+      border: 4px solid #fff1f7;
+      border-radius: 16px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 0 24px rgba(255, 173, 214, 0.24);
+    }
+
+    #lid-main::before,
+    #lid-main::after {
+      content: "";
+      position: absolute;
+      background: #8af5b3;
+    }
+
+    #lid-main::before {
+      left: 50%;
+      top: 0;
+      width: 26px;
+      height: 100%;
+      transform: translateX(-50%);
+    }
+
+    #lid-main::after {
+      left: 0;
+      top: 50%;
+      width: 100%;
+      height: 20px;
+      transform: translateY(-50%);
+    }
+
+    #click-sign {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 128px;
+      height: 128px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 18px;
+      background: rgba(255,255,255,0.98);
+      color: #ff4c93;
+      border: 3px solid #ff9bc7;
+      border-radius: 999px;
+      font-weight: 800;
+      font-size: 24px;
+      line-height: 1.05;
+      z-index: 20;
+      cursor: pointer;
+      box-shadow: 0 0 14px rgba(255,255,255,0.35);
+      user-select: none;
+      text-align: center;
+      pointer-events: none;
+    }
+
+    #click-sign:hover {
+      transform: translate(-50%, -50%) scale(1.05);
+      box-shadow: 0 0 20px rgba(255,255,255,0.45);
+    }
+
+    #click-sign:active {
+      transform: translate(-50%, -50%) scale(0.98);
+    }
+
+    #alpaca {
+      position: absolute;
+      left: 50%;
+      bottom: 108px;
+      width: 200px;
+      height: 240px;
+      transform: translateX(-50%) translateY(130px);
+      transition: transform 0.7s ease;
+      z-index: 2;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    #alpaca.show {
+      transform: translateX(-50%) translateY(0px);
+      opacity: 1;
+    }
+
+    .speech {
+      position: absolute;
+      left: 50%;
+      bottom: 315px;
+      transform: translateX(-50%);
+      width: 520px;
+      max-width: 88vw;
+      background: #fff;
+      color: #333;
+      border: 4px solid #ffd0e3;
+      border-radius: 24px;
+      padding: 16px 18px;
+      text-align: center;
+      font-size: 20px;
+      line-height: 1.35;
+      box-shadow: 0 0 20px rgba(255,255,255,0.16);
+      z-index: 8;
+      display: none;
+    }
+
+    .speech.show { display: block; }
+
+    .speech::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      bottom: -12px;
+      width: 22px;
+      height: 22px;
+      background: #fff;
+      border-right: 4px solid #ffd0e3;
+      border-bottom: 4px solid #ffd0e3;
+      transform: translateX(-50%) rotate(45deg);
+    }
+
+    .heart {
+      position: absolute;
+      font-size: 26px;
+      animation: floatUp 1.8s ease-out forwards;
+      pointer-events: none;
+      z-index: 9;
+      text-shadow: 0 0 10px rgba(255, 150, 200, 0.45);
+    }
+
+    @keyframes floatUp {
+      0% { opacity: 0; transform: translateY(0) scale(0.7); }
+      15% { opacity: 1; }
+      100% { opacity: 0; transform: translateY(-140px) scale(1.3); }
+    }
+
+    .tear {
+      position: absolute;
+      width: 10px;
+      height: 16px;
+      background: #8ed8ff;
+      border-radius: 50% 50% 60% 60%;
+      animation: tearFall 1.4s linear forwards;
+      z-index: 7;
+      opacity: 0.9;
+    }
+
+    @keyframes tearFall {
+      from { transform: translateY(0); opacity: 0.95; }
+      to { transform: translateY(90px); opacity: 0; }
+    }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <div id="game">
+    <div id="stingray-lane"></div>
+
+    <div id="gift-zone">
+      <div id="speech" class="speech"></div>
+
+      <div id="alpaca" aria-label="cute alpaca">
+        <svg viewBox="0 0 200 240" width="200" height="240">
+          <rect x="52" y="172" width="18" height="48" rx="8" fill="#e9d8c2"></rect>
+          <rect x="82" y="176" width="18" height="44" rx="8" fill="#e9d8c2"></rect>
+          <rect x="112" y="176" width="18" height="44" rx="8" fill="#e9d8c2"></rect>
+          <rect x="142" y="172" width="18" height="48" rx="8" fill="#e9d8c2"></rect>
+
+          <ellipse cx="100" cy="140" rx="62" ry="52" fill="#f6eadb"></ellipse>
+          <circle cx="58" cy="122" r="18" fill="#f6eadb"></circle>
+          <circle cx="76" cy="104" r="20" fill="#f6eadb"></circle>
+          <circle cx="100" cy="96" r="24" fill="#f6eadb"></circle>
+          <circle cx="126" cy="104" r="20" fill="#f6eadb"></circle>
+          <circle cx="142" cy="123" r="17" fill="#f6eadb"></circle>
+          <circle cx="54" cy="146" r="16" fill="#f6eadb"></circle>
+          <circle cx="145" cy="148" r="15" fill="#f6eadb"></circle>
+
+          <rect x="82" y="78" width="36" height="60" rx="18" fill="#ead8c2"></rect>
+
+          <ellipse cx="100" cy="64" rx="44" ry="38" fill="#ead8c2"></ellipse>
+
+          <path d="M68 32 Q58 2 78 25" fill="#e3c9aa"></path>
+          <path d="M132 32 Q142 2 122 25" fill="#e3c9aa"></path>
+          <path d="M70 31 Q63 10 77 25" fill="#f3d4dd"></path>
+          <path d="M130 31 Q137 10 123 25" fill="#f3d4dd"></path>
+
+          <ellipse cx="84" cy="62" rx="8" ry="11" fill="#7ed957"></ellipse>
+          <ellipse cx="116" cy="62" rx="8" ry="11" fill="#7ed957"></ellipse>
+          <circle cx="84" cy="62" r="4" fill="#1f2a1f"></circle>
+          <circle cx="116" cy="62" r="4" fill="#1f2a1f"></circle>
+          <circle cx="82" cy="59" r="1.6" fill="#fff"></circle>
+          <circle cx="114" cy="59" r="1.6" fill="#fff"></circle>
+
+          <g id="lashes-left" stroke="#3c2a23" stroke-width="2" stroke-linecap="round">
+            <line x1="79" y1="49" x2="74" y2="43"></line>
+            <line x1="84" y1="48" x2="84" y2="41"></line>
+            <line x1="89" y1="49" x2="94" y2="43"></line>
+          </g>
+          <g id="lashes-right" stroke="#3c2a23" stroke-width="2" stroke-linecap="round">
+            <line x1="111" y1="49" x2="106" y2="43"></line>
+            <line x1="116" y1="48" x2="116" y2="41"></line>
+            <line x1="121" y1="49" x2="126" y2="43"></line>
+          </g>
+
+          <ellipse cx="70" cy="80" rx="10" ry="6" fill="#f4b6bc" opacity="0.7"></ellipse>
+          <ellipse cx="130" cy="80" rx="10" ry="6" fill="#f4b6bc" opacity="0.7"></ellipse>
+
+          <ellipse cx="100" cy="84" rx="18" ry="12" fill="#f5e6d7"></ellipse>
+          <circle cx="94" cy="80" r="2" fill="#5b4339"></circle>
+          <circle cx="106" cy="80" r="2" fill="#5b4339"></circle>
+          <path id="mouth" d="M92 88 Q100 96 108 88" stroke="#5b4339" stroke-width="2.7" fill="none" stroke-linecap="round"></path>
+        </svg>
+      </div>
+
+      <div id="present">
+        <div id="lid">
+          <div id="lid-main"></div>
+        </div>
+        <div id="box">
+          <button id="click-sign" type="button" aria-label="Open the present">Click<br>me!</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const clickSign = document.getElementById('click-sign');
+    const box = document.getElementById('box');
+    const lid = document.getElementById('lid');
+    const present = document.getElementById('present');
+    const alpaca = document.getElementById('alpaca');
+    const speech = document.getElementById('speech');
+    const game = document.getElementById('game');
+    const mouth = document.getElementById('mouth');
+    const stingrayLane = document.getElementById('stingray-lane');
+
+    let opened = false;
+
+    const messages = {
+      initial: 'Warning: I come with a severe lack of noggin but an abundance of love. Press "k" to keep and "d" to discard.',
+      discard: 'How dare you, evil pest! Press "k" to redeem yourself and acquire your bundle of warmth and affection.',
+      keep: 'Thank you for choosing Alpaca! I love you!'
+    };
+
+    function showSpeech(text) {
+      speech.textContent = text;
+      speech.classList.add('show');
+    }
+
+    function hideSpeech() {
+      speech.classList.remove('show');
+    }
+
+    function openPresent() {
+      if (opened) return;
+      opened = true;
+      lid.classList.add('open');
+      alpaca.classList.add('show');
+      setHappyFace();
+      showSpeech(messages.initial);
+    }
+
+    function setHappyFace() {
+      mouth.setAttribute('d', 'M92 88 Q100 96 108 88');
+    }
+
+    function setSadFace() {
+      mouth.setAttribute('d', 'M92 94 Q100 86 108 94');
+    }
+
+    function spawnHeart() {
+      const heart = document.createElement('div');
+      heart.className = 'heart';
+      heart.textContent = Math.random() > 0.5 ? '💗' : '💖';
+      const zoneRect = alpaca.getBoundingClientRect();
+      const gameRect = game.getBoundingClientRect();
+      heart.style.left = (zoneRect.left - gameRect.left + 60 + Math.random() * 80) + 'px';
+      heart.style.top = (zoneRect.top - gameRect.top + 20 + Math.random() * 40) + 'px';
+      game.appendChild(heart);
+      setTimeout(() => heart.remove(), 1800);
+    }
+
+    function spawnTear(side = 'left') {
+      const tear = document.createElement('div');
+      tear.className = 'tear';
+      const zoneRect = alpaca.getBoundingClientRect();
+      const gameRect = game.getBoundingClientRect();
+      const x = side === 'left' ? 78 : 114;
+      tear.style.left = (zoneRect.left - gameRect.left + x) + 'px';
+      tear.style.top = (zoneRect.top - gameRect.top + 60) + 'px';
+      game.appendChild(tear);
+      setTimeout(() => tear.remove(), 1400);
+    }
+
+    function burstHearts() {
+      for (let i = 0; i < 8; i++) {
+        setTimeout(spawnHeart, i * 120);
+      }
+    }
+
+    function cryBurst() {
+      for (let i = 0; i < 6; i++) {
+        setTimeout(() => spawnTear(i % 2 === 0 ? 'left' : 'right'), i * 140);
+      }
+    }
+
+    function handleKeep() {
+      if (!opened) return;
+      hideSpeech();
+      setHappyFace();
+      burstHearts();
+      setTimeout(() => showSpeech(messages.keep), 120);
+    }
+
+    function handleDiscard() {
+      if (!opened) return;
+      hideSpeech();
+      setSadFace();
+      cryBurst();
+      setTimeout(() => showSpeech(messages.discard), 120);
+    }
+
+    present.addEventListener('click', openPresent);
+    box.addEventListener('click', openPresent);
+    lid.addEventListener('click', openPresent);
+    clickSign.addEventListener('click', openPresent);
+
+    document.addEventListener('keydown', (e) => {
+      const key = e.key.toLowerCase();
+      if (!opened) return;
+      if (key === 'k') handleKeep();
+      if (key === 'd') handleDiscard();
+    });
+
+    function createStingrays() {
+      const count = 13;
+      for (let i = 0; i < count; i++) {
+        const ray = document.createElement('div');
+        ray.className = 'stingray';
+        ray.style.top = (12 + (i % 2) * 12) + 'px';
+        ray.style.animationDuration = (11 + Math.random() * 4) + 's';
+        ray.style.animationDelay = (-i * 1.05) + 's';
+        ray.innerHTML = `
+          <svg viewBox="0 0 120 80" aria-hidden="true">
+            <path d="M21 55 C8 44, 6 24, 22 21 C33 19, 40 27, 44 36 C50 28, 60 22, 82 21 C100 20, 111 30, 110 47 C109 64, 96 73, 79 73 C59 73, 41 66, 21 55 Z"
+                  fill="#f63f95" stroke="#5b2f2f" stroke-width="2.5" stroke-linejoin="round"/>
+            <path d="M44 36 C35 21, 29 10, 19 7 C12 5, 10 10, 16 14 C25 20, 30 29, 35 41"
+                  fill="none" stroke="#5b2f2f" stroke-width="2.5" stroke-linecap="round"/>
+            <path d="M21 55 C30 50, 36 48, 44 49 C36 55, 31 62, 29 67 C25 66, 21 62, 21 55 Z"
+                  fill="#ecc3d8" stroke="#5b2f2f" stroke-width="2.5" stroke-linejoin="round"/>
+
+            <circle cx="56" cy="31" r="1.7" fill="#fff"/>
+            <circle cx="64" cy="28" r="1.7" fill="#fff"/>
+            <circle cx="72" cy="30" r="1.7" fill="#fff"/>
+            <circle cx="80" cy="27" r="1.7" fill="#fff"/>
+            <circle cx="51" cy="38" r="1.7" fill="#fff"/>
+            <circle cx="59" cy="37" r="1.7" fill="#fff"/>
+            <circle cx="67" cy="39" r="1.7" fill="#fff"/>
+            <circle cx="76" cy="37" r="1.7" fill="#fff"/>
+            <circle cx="55" cy="45" r="1.7" fill="#fff"/>
+            <circle cx="63" cy="46" r="1.7" fill="#fff"/>
+            <circle cx="71" cy="44" r="1.7" fill="#fff"/>
+
+            <ellipse cx="74" cy="51" rx="4.2" ry="5.4" fill="#5b2f2f" transform="rotate(-18 74 51)"/>
+            <ellipse cx="74.8" cy="50.4" rx="2.3" ry="2.8" fill="#fff" transform="rotate(-18 74.8 50.4)"/>
+            <circle cx="73.6" cy="49.3" r="0.9" fill="#ffd4ea"/>
+
+            <ellipse cx="91" cy="46" rx="4.2" ry="5.4" fill="#5b2f2f" transform="rotate(18 91 46)"/>
+            <ellipse cx="90.4" cy="45.4" rx="2.3" ry="2.8" fill="#fff" transform="rotate(18 90.4 45.4)"/>
+            <circle cx="91.8" cy="44.3" r="0.9" fill="#ffd4ea"/>
+
+            <path d="M80 58 C81.5 55, 84.5 54, 86.5 55.8 C87.6 56.8, 87.7 58.4, 86.7 59.4 C85.6 60.5, 83.8 60.6, 82.8 59.4"
+                  fill="none" stroke="#5b2f2f" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        `;
+        stingrayLane.appendChild(ray);
+      }
+    }
+
+    createStingrays();
+  </script>
+</body>
+</html>
+
+
+
+
