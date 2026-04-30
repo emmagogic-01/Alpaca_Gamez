@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Where's Walrus?</title>
+  <style>
+    :root {
+      --bg: #eaf7ff;
+      --panel: #ffffff;
+      --ink: #234;
+      --accent: #3aa7ff;
+      --accent-dark: #0878c9;
+      --success: #22a06b;
+      --danger: #ef476f;
+      --shadow: 0 14px 35px rgba(30, 70, 100, 0.18);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Trebuchet MS", system-ui, sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top left, #fff7c7 0 18%, transparent 19%),
+        linear-gradient(135deg, #d9f2ff, #f7ecff 55%, #fff8db);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .game-shell {
+      width: min(1120px, 100%);
+      background: rgba(255, 255, 255, 0.88);
+      border: 4px solid #fff;
+      border-radius: 28px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    header {
+      padding: 22px 26px;
+      display: flex;
+      gap: 18px;
+      align-items: center;
+      justify-content: space-between;
+      background: linear-gradient(90deg, #ffffff, #e9f8ff);
+      border-bottom: 3px solid #d8f0ff;
+      flex-wrap: wrap;
+    }
+
+    .title-wrap h1 {
+      margin: 0;
+      font-size: clamp(2rem, 4vw, 3.2rem);
+      letter-spacing: 0.5px;
+      color: #14324a;
+    }
+
+    .title-wrap p {
+      margin: 4px 0 0;
+      color: #527083;
+      font-size: 1rem;
+    }
+
+    .stats {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .pill {
+      background: #f5fbff;
+      border: 2px solid #d8f0ff;
+      border-radius: 999px;
+      padding: 10px 14px;
+      font-weight: 800;
+      min-width: 98px;
+      text-align: center;
+    }
+
+    .main {
+      display: grid;
+      grid-template-columns: 250px 1fr;
+      min-height: 650px;
+    }
+
+    aside {
+      padding: 22px;
+      background: #fbfdff;
+      border-right: 3px solid #e4f3fb;
+    }
+
+    .card {
+      background: #fff;
+      border: 2px solid #e6f0f7;
+      border-radius: 22px;
+      padding: 16px;
+      box-shadow: 0 8px 20px rgba(30, 70, 100, 0.08);
+      margin-bottom: 16px;
+    }
+
+    .card h2 {
+      margin: 0 0 8px;
+      font-size: 1.1rem;
+    }
+
+    .card p,
+    .card li {
+      font-size: 0.94rem;
+      line-height: 1.45;
+      color: #4b6678;
+    }
+
+    ul {
+      padding-left: 18px;
+      margin: 8px 0 0;
+    }
+
+    button {
+      border: none;
+      border-radius: 16px;
+      padding: 12px 14px;
+      cursor: pointer;
+      font-weight: 900;
+      font-family: inherit;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 18px rgba(30, 70, 100, 0.15);
+    }
+
+    .primary-btn {
+      width: 100%;
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .secondary-btn {
+      width: 100%;
+      margin-top: 10px;
+      background: #f3f8fb;
+      color: #24445c;
+      border: 2px solid #dbeaf2;
+    }
+
+    .level-list {
+      display: grid;
+      gap: 9px;
+      margin-top: 10px;
+    }
+
+    .level-btn {
+      background: #f7fbff;
+      border: 2px solid #deedf6;
+      color: #304c5f;
+      text-align: left;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .level-btn.active {
+      background: #e2f4ff;
+      border-color: var(--accent);
+      color: #0f5f99;
+    }
+
+    .scene-wrap {
+      position: relative;
+      padding: 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      min-width: 0;
+    }
+
+    .message {
+      min-height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 16px;
+      border: 2px solid #dceef8;
+      background: #ffffff;
+      border-radius: 20px;
+      color: #3d5b70;
+      font-weight: 800;
+    }
+
+    .message span {
+      font-weight: 700;
+      color: #648096;
+    }
+
+    #scene {
+      position: relative;
+      width: 100%;
+      min-height: 560px;
+      border-radius: 26px;
+      overflow: hidden;
+      border: 4px solid #fff;
+      box-shadow: inset 0 0 0 2px rgba(60, 120, 160, 0.12), 0 12px 30px rgba(30, 70, 100, 0.12);
+      cursor: crosshair;
+      user-select: none;
+    }
+
+    .scene-title {
+      position: absolute;
+      left: 18px;
+      top: 16px;
+      z-index: 8;
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(5px);
+      border: 2px solid rgba(255, 255, 255, 0.9);
+      border-radius: 18px;
+      padding: 10px 14px;
+      font-weight: 900;
+      color: #24445c;
+      box-shadow: 0 8px 18px rgba(30, 70, 100, 0.12);
+    }
+
+    .object {
+      position: absolute;
+      display: grid;
+      place-items: center;
+      font-size: var(--size);
+      transform: translate(-50%, -50%) rotate(var(--rot));
+      filter: drop-shadow(0 4px 3px rgba(0, 0, 0, 0.14));
+      opacity: 0.96;
+      z-index: 4;
+    }
+
+    .tiny-note {
+      font-size: 0.8rem;
+      color: #7991a4;
+      margin-top: 8px;
+    }
+
+    .walrus {
+      position: absolute;
+      left: var(--x);
+      top: var(--y);
+      width: var(--w);
+      height: calc(var(--w) * 0.76);
+      transform: translate(-50%, -50%) rotate(var(--tilt));
+      z-index: 5;
+      cursor: pointer;
+      transition: transform 0.18s ease, filter 0.18s ease;
+    }
+
+    .walrus:hover {
+      transform: translate(-50%, -50%) rotate(var(--tilt)) scale(1.07);
+      filter: drop-shadow(0 8px 8px rgba(0, 0, 0, 0.22));
+    }
+
+    .walrus-body {
+      position: absolute;
+      left: 8%;
+      top: 15%;
+      width: 84%;
+      height: 70%;
+      background: #c99d78;
+      border: 3px solid #8f674a;
+      border-radius: 48% 48% 44% 44%;
+      box-shadow: inset -8px -10px 0 rgba(112, 73, 45, 0.13);
+    }
+
+    .walrus-head {
+      position: absolute;
+      left: 18%;
+      top: 0;
+      width: 64%;
+      height: 65%;
+      background: #d7ad88;
+      border: 3px solid #8f674a;
+      border-radius: 48% 48% 45% 45%;
+      box-shadow: inset -7px -7px 0 rgba(112, 73, 45, 0.12);
+    }
+
+    .eye {
+      position: absolute;
+      top: 28%;
+      width: 12%;
+      aspect-ratio: 1 / 1;
+      background: #53d17d;
+      border: 2px solid #123b2a;
+      border-radius: 50%;
+    }
+
+    .eye::after {
+      content: "";
+      position: absolute;
+      width: 35%;
+      height: 35%;
+      left: 18%;
+      top: 16%;
+      background: #fff;
+      border-radius: 50%;
+    }
+
+    .eye.left { left: 27%; }
+    .eye.right { right: 27%; }
+
+    .lashes {
+      position: absolute;
+      top: 20%;
+      width: 17%;
+      height: 10%;
+      border-top: 2px solid #362414;
+    }
+
+    .lashes::before,
+    .lashes::after {
+      content: "";
+      position: absolute;
+      width: 2px;
+      height: 9px;
+      background: #362414;
+      top: -7px;
+      border-radius: 2px;
+    }
+
+    .lashes::before { left: 25%; transform: rotate(-24deg); }
+    .lashes::after { right: 25%; transform: rotate(24deg); }
+    .lashes.left { left: 24%; transform: rotate(-8deg); }
+    .lashes.right { right: 24%; transform: rotate(8deg); }
+
+    .snout {
+      position: absolute;
+      left: 25%;
+      top: 43%;
+      width: 50%;
+      height: 30%;
+      background: #efd1b5;
+      border: 2px solid #8f674a;
+      border-radius: 50%;
+    }
+
+    .nose {
+      position: absolute;
+      left: 43%;
+      top: 43%;
+      width: 14%;
+      height: 10%;
+      background: #4a3024;
+      border-radius: 50%;
+      z-index: 2;
+    }
+
+    .tusk {
+      position: absolute;
+      top: 63%;
+      width: 10%;
+      height: 35%;
+      background: #fff7dc;
+      border: 2px solid #a38c6c;
+      border-radius: 0 0 50% 50%;
+      z-index: 3;
+    }
+
+    .tusk.left { left: 38%; transform: rotate(7deg); }
+    .tusk.right { right: 38%; transform: rotate(-7deg); }
+
+    .whisker {
+      position: absolute;
+      width: 22%;
+      height: 2px;
+      background: #6c4c39;
+      top: 58%;
+      z-index: 4;
+    }
+
+    .whisker.w1 { left: 12%; transform: rotate(12deg); }
+    .whisker.w2 { left: 12%; top: 64%; transform: rotate(-8deg); }
+    .whisker.w3 { right: 12%; transform: rotate(-12deg); }
+    .whisker.w4 { right: 12%; top: 64%; transform: rotate(8deg); }
+
+    .flipper {
+      position: absolute;
+      bottom: 9%;
+      width: 23%;
+      height: 28%;
+      background: #b88463;
+      border: 3px solid #8f674a;
+      border-radius: 55% 55% 45% 45%;
+      z-index: 1;
+    }
+
+    .flipper.left { left: 4%; transform: rotate(-28deg); }
+    .flipper.right { right: 4%; transform: rotate(28deg); }
+
+    .found .walrus {
+      animation: celebrate 0.55s ease 4;
+      z-index: 20;
+    }
+
+    @keyframes celebrate {
+      0%, 100% { transform: translate(-50%, -50%) rotate(var(--tilt)) scale(1); }
+      50% { transform: translate(-50%, -50%) rotate(calc(var(--tilt) + 12deg)) scale(1.16); }
+    }
+
+    .click-ring {
+      position: absolute;
+      width: 52px;
+      height: 52px;
+      border: 5px solid var(--danger);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      animation: ring 0.65s ease forwards;
+      z-index: 30;
+    }
+
+    @keyframes ring {
+      from { opacity: 1; scale: 0.5; }
+      to { opacity: 0; scale: 1.6; }
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(18, 35, 50, 0.42);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 100;
+    }
+
+    .modal.show {
+      display: flex;
+    }
+
+    .modal-content {
+      width: min(520px, 100%);
+      background: #fff;
+      border-radius: 28px;
+      border: 4px solid #fff;
+      box-shadow: var(--shadow);
+      padding: 26px;
+      text-align: center;
+    }
+
+    .modal-content h2 {
+      margin: 0 0 8px;
+      font-size: 2rem;
+      color: #14324a;
+    }
+
+    .modal-content p {
+      color: #527083;
+      line-height: 1.5;
+    }
+
+    .modal-actions {
+      display: grid;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .beach {
+      background:
+        linear-gradient(to bottom, #9be2ff 0 40%, transparent 40%),
+        radial-gradient(circle at 86% 13%, #ffe36d 0 42px, transparent 43px),
+        linear-gradient(to bottom, #7ed6ff 0 42%, #fff4bf 42% 100%);
+    }
+
+    .arctic {
+      background:
+        radial-gradient(circle at 14% 15%, rgba(255,255,255,.9) 0 70px, transparent 71px),
+        linear-gradient(to bottom, #a5e7ff 0 44%, #eefcff 44% 100%);
+    }
+
+    .market {
+      background:
+        linear-gradient(90deg, rgba(255,255,255,.25) 0 12%, transparent 12% 24%, rgba(255,255,255,.25) 24% 36%, transparent 36%),
+        linear-gradient(to bottom, #ffd1dc 0 26%, #ffeab6 26% 100%);
+    }
+
+    .space {
+      background:
+        radial-gradient(circle at 15% 18%, #fff 0 2px, transparent 3px),
+        radial-gradient(circle at 45% 28%, #fff 0 2px, transparent 3px),
+        radial-gradient(circle at 77% 13%, #fff 0 3px, transparent 4px),
+        radial-gradient(circle at 80% 70%, #ffd36b 0 55px, transparent 56px),
+        linear-gradient(135deg, #13213d, #403166 60%, #1e355f);
+    }
+
+    .space .scene-title {
+      color: #fff;
+      background: rgba(28, 39, 74, 0.7);
+      border-color: rgba(255,255,255,0.35);
+    }
+
+    .space .object {
+      filter: drop-shadow(0 4px 4px rgba(255, 255, 255, 0.18));
+    }
+
+    @media (max-width: 850px) {
+      .main {
+        grid-template-columns: 1fr;
+      }
+
+      aside {
+        border-right: none;
+        border-bottom: 3px solid #e4f3fb;
+      }
+
+      #scene {
+        min-height: 520px;
+      }
+    }
+
+    @media (max-width: 560px) {
+      body {
+        padding: 8px;
+      }
+
+      header, aside, .scene-wrap {
+        padding: 14px;
+      }
+
+      .pill {
+        min-width: auto;
+        font-size: 0.9rem;
+      }
+
+      #scene {
+        min-height: 460px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="game-shell">
+    <header>
+      <div class="title-wrap">
+        <h1>Where's Walrus?</h1>
+        <p>Find the cute green-eyed walrus hiding in each busy scene.</p>
+      </div>
+      <div class="stats">
+        <div class="pill">Level: <span id="levelStat">1</span></div>
+        <div class="pill">Score: <span id="scoreStat">0</span></div>
+        <div class="pill">Time: <span id="timeStat">60</span>s</div>
+      </div>
+    </header>
+
+    <div class="main">
+      <aside>
+        <div class="card">
+          <h2>How to Play</h2>
+          <ul>
+            <li>Look carefully through the scene.</li>
+            <li>Click the walrus when you find it.</li>
+            <li>Wrong clicks cost points.</li>
+            <li>Use hints if you get stuck.</li>
+            <li>The walrus may be tiny, tilted, or partly hidden behind objects.</li>
+            <li>There are 20 levels, and the later ones are intentionally crowded.</li>
+          </ul>
+          <p class="tiny-note">Tip: the walrus gets smaller and the scenes get busier each level.</p>
+        </div>
+
+        <div class="card">
+          <h2>Levels</h2>
+          <div id="levelList" class="level-list"></div>
+        </div>
+
+        <div class="card">
+          <h2>Controls</h2>
+          <button id="startBtn" class="primary-btn">Start Game</button>
+          <button id="hintBtn" class="secondary-btn">Use Hint</button>
+          <button id="resetBtn" class="secondary-btn">Reset</button>
+        </div>
+      </aside>
+
+      <section class="scene-wrap">
+        <div class="message">
+          <div id="messageText">Press Start Game when you're ready.</div>
+          <span id="hintText">Hints: 3</span>
+        </div>
+        <div id="scene">
+          <div class="scene-title" id="sceneTitle">Sunny Beach</div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <div class="modal" id="modal">
+    <div class="modal-content">
+      <h2 id="modalTitle">You found Walrus!</h2>
+      <p id="modalText">Nice work.</p>
+      <div class="modal-actions">
+        <button id="nextBtn" class="primary-btn">Next Level</button>
+        <button id="playAgainBtn" class="secondary-btn">Play Again</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const scene = document.getElementById("scene");
+    const sceneTitle = document.getElementById("sceneTitle");
+    const levelStat = document.getElementById("levelStat");
+    const scoreStat = document.getElementById("scoreStat");
+    const timeStat = document.getElementById("timeStat");
+    const messageText = document.getElementById("messageText");
+    const hintText = document.getElementById("hintText");
+    const startBtn = document.getElementById("startBtn");
+    const hintBtn = document.getElementById("hintBtn");
+    const resetBtn = document.getElementById("resetBtn");
+    const levelList = document.getElementById("levelList");
+    const modal = document.getElementById("modal");
+    const modalTitle = document.getElementById("modalTitle");
+    const modalText = document.getElementById("modalText");
+    const nextBtn = document.getElementById("nextBtn");
+    const playAgainBtn = document.getElementById("playAgainBtn");
+
+    const levelThemes = [
+      {
+        name: "Sunny Beach",
+        className: "beach",
+        objects: ["🌴", "🐚", "🦀", "⭐", "🌊", "🏖️", "🍦", "🐠", "🩴", "🪣", "🥥", "🪨"]
+      },
+      {
+        name: "Arctic Ice Party",
+        className: "arctic",
+        objects: ["🐧", "❄️", "⛄", "🧊", "🎣", "🐟", "🦭", "🌨️", "⛸️", "🏔️", "🪨", "☁️"]
+      },
+      {
+        name: "Busy Fish Market",
+        className: "market",
+        objects: ["🐟", "🦐", "🧺", "🍋", "🥕", "🍅", "🛒", "🧀", "🥬", "🐙", "🥔", "🍞"]
+      },
+      {
+        name: "Walrus in Space",
+        className: "space",
+        objects: ["🚀", "🪐", "⭐", "🌙", "☄️", "🛸", "👽", "✨", "🌌", "🛰️", "🟤", "🪨"]
+      }
+    ];
+
+    const hiddenSpots = [
+      { x: 72, y: 67, tilt: -7 },
+      { x: 31, y: 73, tilt: 8 },
+      { x: 82, y: 35, tilt: -4 },
+      { x: 46, y: 48, tilt: 12 },
+      { x: 18, y: 42, tilt: -11 },
+      { x: 63, y: 24, tilt: 9 },
+      { x: 88, y: 78, tilt: -13 },
+      { x: 39, y: 59, tilt: 15 },
+      { x: 56, y: 84, tilt: -5 },
+      { x: 24, y: 28, tilt: 11 },
+      { x: 76, y: 52, tilt: -14 },
+      { x: 49, y: 33, tilt: 6 },
+      { x: 14, y: 82, tilt: -10 },
+      { x: 69, y: 71, tilt: 13 },
+      { x: 91, y: 46, tilt: -8 },
+      { x: 34, y: 18, tilt: 7 },
+      { x: 58, y: 62, tilt: -16 },
+      { x: 22, y: 65, tilt: 14 },
+      { x: 84, y: 21, tilt: -12 },
+      { x: 44, y: 86, tilt: 10 }
+    ];
+
+    const levels = Array.from({ length: 20 }, (_, index) => {
+      const theme = levelThemes[index % levelThemes.length];
+      const spot = hiddenSpots[index];
+      return {
+        name: `${theme.name} ${Math.floor(index / levelThemes.length) + 1}`,
+        className: theme.className,
+        time: Math.max(24, 60 - index * 2),
+        walrus: {
+          x: spot.x,
+          y: spot.y,
+          w: Math.max(18, 46 - index * 1.25),
+          tilt: spot.tilt
+        },
+        objects: theme.objects,
+        difficulty: index + 1
+      };
+    });
+
+    let currentLevel = 0;
+    let score = 0;
+    let timeLeft = levels[0].time;
+    let hintsLeft = 3;
+    let timer = null;
+    let gameActive = false;
+    let found = false;
+
+    function randomBetween(min, max) {
+      return Math.random() * (max - min) + min;
+    }
+
+    function clearTimer() {
+      if (timer) {
+        clearInterval(timer);
+        timer = null;
+      }
+    }
+
+    function updateStats() {
+      levelStat.textContent = currentLevel + 1;
+      scoreStat.textContent = score;
+      timeStat.textContent = timeLeft;
+      hintText.textContent = `Hints: ${hintsLeft}`;
+    }
+
+    function renderLevelButtons() {
+      levelList.innerHTML = "";
+      levels.forEach((level, index) => {
+        const btn = document.createElement("button");
+        btn.className = `level-btn ${index === currentLevel ? "active" : ""}`;
+        btn.innerHTML = `<span>${index + 1}. ${level.name}</span><span>${index < currentLevel ? "✓" : ""}</span>`;
+        btn.addEventListener("click", () => {
+          currentLevel = index;
+          loadLevel(false);
+        });
+        levelList.appendChild(btn);
+      });
+    }
+
+    function createObject(symbol, x, y, size, rot) {
+      const el = document.createElement("div");
+      el.className = "object";
+      el.textContent = symbol;
+      el.style.left = `${x}%`;
+      el.style.top = `${y}%`;
+      el.style.setProperty("--size", `${size}px`);
+      el.style.setProperty("--rot", `${rot}deg`);
+      return el;
+    }
+
+    function createWalrus(config) {
+      const walrus = document.createElement("div");
+      walrus.className = "walrus";
+      walrus.id = "walrus";
+      walrus.style.setProperty("--x", `${config.x}%`);
+      walrus.style.setProperty("--y", `${config.y}%`);
+      walrus.style.setProperty("--w", `${config.w}px`);
+      walrus.style.setProperty("--tilt", `${config.tilt}deg`);
+      walrus.setAttribute("aria-label", "Hidden walrus");
+
+      walrus.innerHTML = `
+        <div class="flipper left"></div>
+        <div class="flipper right"></div>
+        <div class="walrus-body"></div>
+        <div class="walrus-head">
+          <div class="lashes left"></div>
+          <div class="lashes right"></div>
+          <div class="eye left"></div>
+          <div class="eye right"></div>
+          <div class="snout"></div>
+          <div class="nose"></div>
+          <div class="whisker w1"></div>
+          <div class="whisker w2"></div>
+          <div class="whisker w3"></div>
+          <div class="whisker w4"></div>
+          <div class="tusk left"></div>
+          <div class="tusk right"></div>
+        </div>
+      `;
+
+      walrus.addEventListener("click", (event) => {
+        event.stopPropagation();
+        findWalrus();
+      });
+
+      return walrus;
+    }
+
+    function populateScene(level) {
+      const objectCount = 130 + currentLevel * 32;
+      for (let i = 0; i < objectCount; i++) {
+        const symbol = level.objects[Math.floor(Math.random() * level.objects.length)];
+        const x = randomBetween(5, 96);
+        const y = randomBetween(12, 94);
+        const size = randomBetween(14, Math.max(24, 42 - currentLevel * 0.8));
+        const rot = randomBetween(-25, 25);
+        scene.appendChild(createObject(symbol, x, y, size, rot));
+      }
+
+      // Add many walrus-colored decoys so the real walrus blends into the crowd.
+      const decoys = 22 + currentLevel * 5;
+      for (let i = 0; i < decoys; i++) {
+        const symbol = ["🪨", "🧸", "🥥", "🍞", "🏺", "🟤", "🐚", "🥔"][i % 8];
+        scene.appendChild(createObject(symbol, randomBetween(4, 96), randomBetween(12, 95), randomBetween(18, 38), randomBetween(-35, 35)));
+      }
+
+      // Add clutter close to the actual walrus position, making it feel more like a real hidden-object game.
+      const wx = level.walrus.x;
+      const wy = level.walrus.y;
+      const coverCount = 18 + currentLevel * 3;
+      for (let i = 0; i < coverCount; i++) {
+        const symbol = level.objects[Math.floor(Math.random() * level.objects.length)];
+        const spread = Math.max(3.5, 9 - currentLevel * 0.22);
+        const nearX = Math.max(4, Math.min(96, wx + randomBetween(-spread, spread)));
+        const nearY = Math.max(10, Math.min(94, wy + randomBetween(-spread, spread)));
+        const cover = createObject(symbol, nearX, nearY, randomBetween(14, 30), randomBetween(-35, 35));
+        cover.style.zIndex = i % 3 === 0 ? 7 : 6;
+        scene.appendChild(cover);
+      }
+    }
+
+    function loadLevel(shouldStart = false) {
+      clearTimer();
+      gameActive = false;
+      found = false;
+      scene.className = "";
+      scene.innerHTML = `<div class="scene-title" id="sceneTitle">${levels[currentLevel].name}</div>`;
+      scene.classList.add(levels[currentLevel].className);
+      timeLeft = levels[currentLevel].time;
+      populateScene(levels[currentLevel]);
+      scene.appendChild(createWalrus(levels[currentLevel].walrus));
+      messageText.textContent = shouldStart ? "Find the walrus!" : "Press Start Game when you're ready.";
+      updateStats();
+      renderLevelButtons();
+      if (shouldStart) startGame();
+    }
+
+    function startGame() {
+      clearTimer();
+      gameActive = true;
+      found = false;
+      messageText.textContent = `Level ${currentLevel + 1}: Find Walrus in ${levels[currentLevel].name}!`;
+      timer = setInterval(() => {
+        timeLeft--;
+        updateStats();
+        if (timeLeft <= 0) {
+          endGame(false);
+        }
+      }, 1000);
+    }
+
+    function findWalrus() {
+      if (!gameActive || found) return;
+      found = true;
+      gameActive = false;
+      clearTimer();
+      scene.classList.add("found");
+
+      const points = Math.max(10, timeLeft * 2 + 25 + currentLevel * 8);
+      score += points;
+      updateStats();
+
+      setTimeout(() => {
+        const isLastLevel = currentLevel === levels.length - 1;
+        modalTitle.textContent = isLastLevel ? "You found every Walrus!" : "You found Walrus!";
+        modalText.textContent = isLastLevel
+          ? `Amazing! Your final score is ${score}. Walrus is very impressed. 🦭`
+          : `Nice work! You earned ${points} points. Ready for the next hiding spot?`;
+        nextBtn.textContent = isLastLevel ? "Finish" : "Next Level";
+        modal.classList.add("show");
+      }, 650);
+    }
+
+    function endGame(won) {
+      clearTimer();
+      gameActive = false;
+      modalTitle.textContent = won ? "You won!" : "Time's up!";
+      modalText.textContent = won
+        ? `Final score: ${score}. Great walrus spotting!`
+        : `Walrus stayed hidden this time. Final score: ${score}. Try again!`;
+      nextBtn.textContent = "Close";
+      modal.classList.add("show");
+    }
+
+    function showWrongClick(x, y) {
+      const ring = document.createElement("div");
+      ring.className = "click-ring";
+      ring.style.left = `${x}px`;
+      ring.style.top = `${y}px`;
+      scene.appendChild(ring);
+      setTimeout(() => ring.remove(), 700);
+    }
+
+    function useHint() {
+      if (!gameActive || found) {
+        messageText.textContent = "Start the level first, then use a hint.";
+        return;
+      }
+      if (hintsLeft <= 0) {
+        messageText.textContent = "No hints left! Trust your walrus instincts.";
+        return;
+      }
+
+      hintsLeft--;
+      score = Math.max(0, score - 5);
+      const walrusConfig = levels[currentLevel].walrus;
+      let vertical = walrusConfig.y < 35 ? "upper" : walrusConfig.y > 65 ? "lower" : "middle";
+      let horizontal = walrusConfig.x < 35 ? "left" : walrusConfig.x > 65 ? "right" : "central";
+      if (currentLevel < 7) {
+        messageText.textContent = `Hint: Walrus is somewhere in the ${vertical}-${horizontal} area, but it may be partly covered.`;
+      } else if (currentLevel < 14) {
+        messageText.textContent = `Hint: Walrus is hiding in a crowded ${vertical} section.`;
+      } else {
+        messageText.textContent = "Hint: Walrus is very small and partly covered. Look for green eyes and tiny tusks.";
+      }
+      updateStats();
+    }
+
+    scene.addEventListener("click", (event) => {
+      if (!gameActive || found) return;
+      const rect = scene.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+      showWrongClick(x, y);
+      score = Math.max(0, score - 2);
+      messageText.textContent = "Not there! Keep looking carefully.";
+      updateStats();
+    });
+
+    startBtn.addEventListener("click", () => {
+      loadLevel(true);
+    });
+
+    hintBtn.addEventListener("click", useHint);
+
+    resetBtn.addEventListener("click", () => {
+      currentLevel = 0;
+      score = 0;
+      hintsLeft = 3;
+      loadLevel(false);
+    });
+
+    nextBtn.addEventListener("click", () => {
+      modal.classList.remove("show");
+      if (currentLevel < levels.length - 1 && found) {
+        currentLevel++;
+        loadLevel(true);
+      } else {
+        endGame(true);
+        modal.classList.remove("show");
+        currentLevel = 0;
+        score = 0;
+        hintsLeft = 3;
+        loadLevel(false);
+      }
+    });
+
+    playAgainBtn.addEventListener("click", () => {
+      modal.classList.remove("show");
+      currentLevel = 0;
+      score = 0;
+      hintsLeft = 3;
+      loadLevel(true);
+    });
+
+    loadLevel(false);
+  </script>
+</body>
+</html>
